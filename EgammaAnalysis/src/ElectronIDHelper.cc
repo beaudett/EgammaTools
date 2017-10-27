@@ -6,6 +6,7 @@ ElectronIDHelper::ElectronIDHelper(const edm::ParameterSet  & iConfig,edm::Consu
         eeRecHitInputTag_(iConfig.getParameter<edm::InputTag> ("EERecHits") ),
         fhRecHitInputTag_(iConfig.getParameter<edm::InputTag> ("FHRecHits") ),
         bhRecHitInputTag_(iConfig.getParameter<edm::InputTag> ("BHRecHits") ),
+        multiclusterTag_(iConfig.getParameter<edm::InputTag> ("PFMultiClusters"),
         dEdXWeights_(iConfig.getParameter<std::vector<double> >("dEdXWeights")){
 
     isoHelper_.setDeltaR(iConfig.getUntrackedParameter<double>("electronIsoDeltaR", 0.15));
@@ -15,6 +16,7 @@ ElectronIDHelper::ElectronIDHelper(const edm::ParameterSet  & iConfig,edm::Consu
     recHitsEE_ = iC.consumes<HGCRecHitCollection>(eeRecHitInputTag_);
     recHitsFH_ = iC.consumes<HGCRecHitCollection>(fhRecHitInputTag_);
     recHitsBH_ = iC.consumes<HGCRecHitCollection>(bhRecHitInputTag_);
+    multiClusters_ = iC.consumes<std::vector<reco::HGCalMultiCluster>>(multiclusterTag_);
     pcaHelper_.setdEdXWeights(dEdXWeights_);
     debug_ = false;
 }
@@ -38,12 +40,12 @@ void ElectronIDHelper::setRecHitTools(const hgcal::RecHitTools * recHitTools){
     pcaHelper_.setRecHitTools(recHitTools);
 }
 
-void ElectronIDHelper::computeHGCAL(const reco::GsfElectron & theElectron, float radius, bool doiso) {
+int ElectronIDHelper::computeHGCAL(const reco::GsfElectron & theElectron, float radius, bool doiso) {
     theElectron_ = &theElectron;
     if (theElectron.isEB()) {
         if (debug_) std::cout << "The electron is in the barrel" <<std::endl;
         pcaHelper_.clear();
-        return;
+        return 0;
     }
 
     pcaHelper_.storeRecHits(*theElectron.electronCluster());
@@ -57,8 +59,13 @@ void ElectronIDHelper::computeHGCAL(const reco::GsfElectron & theElectron, float
     // first computation within cylinder, halo hits included
     pcaHelper_.computePCA(radius);
     // second computation within cylinder, halo hits included
-    pcaHelper_.computePCA(radius);
+    if(!pcaHelper_.computePCA(radius)) return 0;
+
     pcaHelper_.computeShowerWidth(radius);
+
     if(doiso)
         isoHelper_.produceHGCalIso(theElectron.electronCluster());
+
+    return 1;
+
 }

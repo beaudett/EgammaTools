@@ -43,7 +43,8 @@ public:
     }
     void setRecHitTools(const hgcal::RecHitTools * recHitTools);
 
-    void computeHGCAL(const reco::GsfElectron & theElectron, float radius, bool computeIsoRings=true);
+
+    int computeHGCAL(const reco::GsfElectron & theElectron, float radius, bool computeIsoRings=true);
 
     inline double electronClusterEnergy() const { return theElectron_->electronCluster()->energy();}
 
@@ -85,6 +86,7 @@ private:
     edm::InputTag  eeRecHitInputTag_;
     edm::InputTag  fhRecHitInputTag_;
     edm::InputTag  bhRecHitInputTag_;
+    edm::InputTag multiclusterTag_;
 
     std::vector<double> dEdXWeights_;
     EGammaPCAHelper pcaHelper_;
@@ -92,6 +94,8 @@ private:
     edm::EDGetTokenT<HGCRecHitCollection> recHitsEE_;
     edm::EDGetTokenT<HGCRecHitCollection> recHitsFH_;
     edm::EDGetTokenT<HGCRecHitCollection> recHitsBH_;
+    edm::EDGetTokenT<std::vector<reco::HGCalMultiCluster>> multiClusters_;
+    
     hgcal::RecHitTools recHitTools_;
     bool debug_;
 };
